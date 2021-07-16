@@ -36,10 +36,10 @@ function ProfileRelationsBox({ title, lista }) {
       <ul>
         {
           lista.map(item => (
-            <li key={item.tittle}>
-              <a href={'/users/' + item.tittle} >
+            <li key={item.title}>
+              <a href={'/users/' + item.title} >
                 <img src={item.image} />
-                <span>{item.tittle}</span>
+                <span>{item.title}</span>
               </a>
             </li>
           ))
@@ -55,7 +55,6 @@ export default function Home() {
 
   const [comunidades, setComunidades] = React.useState([])
   const [seguidores, setSeguidores] = React.useState([])
-  console.log(seguidores)
 
   const pessoasFavoritas = [
     'castielisgone',
@@ -67,23 +66,62 @@ export default function Home() {
   ]
 
   useEffect(() => {
-
     fetch('https://api.github.com/users/AntonioLuisP/followers')
       .then(response => response.json())
       .then(response => {
         setSeguidores(response)
       })
       .catch(error => console.log(error))
+
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '40d06f6fd71a3c4de591751619e699',
+      },
+      body: JSON.stringify({
+        "query": `query {
+        allCommunities{
+          id,
+          title,
+          imageUrl,
+          creatorSlug    
+        }
+       }`})
+
+    })
+      .then(response => response.json())
+      .then(response => {
+        setComunidades(response.data.allCommunities)
+      })
+      .catch(error => console.log(error))
+
   }, [])
 
   function handleCriarComunidade(e) {
     e.preventDefault()
     const dadosForm = new FormData(e.target);
 
-    setComunidades([...comunidades, {
-      tittle: dadosForm.get('tittle'),
-      image: dadosForm.get('image')
-    }])
+    const comunidade = {
+      title: dadosForm.get('title'),
+      imageUrl: dadosForm.get('imageUrl'),
+      creatorSlug: gitUser
+    }
+
+    fetch('/api/comunidades', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(comunidade)
+    })
+      .then(async response => {
+        const dados = await response.json()
+        setComunidades([...comunidades, dados.registroCriado])
+      })
+
+    // setComunidades([...comunidades, comunidade])
   }
 
   return (
@@ -110,7 +148,7 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="Qual vai ser o nome da sua comunidade?"
-                  name='tittle'
+                  name='title'
                   aria-label='Qual vai ser o nome da sua comunidade?'
                 />
               </div>
@@ -118,7 +156,7 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="Coloque uma url para usarmos de capa?"
-                  name='image'
+                  name='imageUrl'
                   aria-label='Coloque uma url para usarmos de capa?'
                 />
               </div>
@@ -131,8 +169,24 @@ export default function Home() {
         <div className="profileRelationsArea" style={{ gridArea: "profileRelationsArea" }}>
 
           <ProfileRelationsBox title={'Seguidores'} lista={seguidores} />
-          <ProfileRelationsBox title={'Comunidades'} lista={comunidades} />
 
+          <ProfileRelationsBoxWrapper>
+            <h2 className='smallTitle'>
+              Comunidade ({comunidades.length})
+            </h2>
+            <ul>
+              {
+                comunidades.map(comunidade => (
+                  <li key={comunidade.id}>
+                    <a href={'/users/' + comunidade.title} >
+                      <img src={comunidade.imageUrl} />
+                      <span>{comunidade.title}</span>
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </ProfileRelationsBoxWrapper>
           <ProfileRelationsBoxWrapper>
             <h2 className='smallTitle'>
               Pessoas da Comunidade ({pessoasFavoritas.length})
