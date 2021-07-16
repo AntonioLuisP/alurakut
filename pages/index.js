@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Box from '../src/components/Box';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 import MainGrid from '../src/components/MainGrid';
@@ -27,11 +27,35 @@ function ProfileSidebar(props) {
   )
 }
 
+function ProfileRelationsBox({ title, lista }) {
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className='smallTitle'>
+        {title} ({lista.length})
+      </h2>
+      <ul>
+        {
+          lista.map(item => (
+            <li key={item.tittle}>
+              <a href={'/users/' + item.tittle} >
+                <img src={item.image} />
+                <span>{item.tittle}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </ProfileRelationsBoxWrapper>
+  )
+}
+
 export default function Home() {
 
   const gitUser = "AntonioLuisP"
 
   const [comunidades, setComunidades] = React.useState([])
+  const [seguidores, setSeguidores] = React.useState([])
+  console.log(seguidores)
 
   const pessoasFavoritas = [
     'castielisgone',
@@ -42,6 +66,16 @@ export default function Home() {
     'rafaballerini',
   ]
 
+  useEffect(() => {
+
+    fetch('https://api.github.com/users/AntonioLuisP/followers')
+      .then(response => response.json())
+      .then(response => {
+        setSeguidores(response)
+      })
+      .catch(error => console.log(error))
+  }, [])
+
   function handleCriarComunidade(e) {
     e.preventDefault()
     const dadosForm = new FormData(e.target);
@@ -50,7 +84,6 @@ export default function Home() {
       tittle: dadosForm.get('tittle'),
       image: dadosForm.get('image')
     }])
-    
   }
 
   return (
@@ -96,24 +129,10 @@ export default function Home() {
           </Box>
         </div>
         <div className="profileRelationsArea" style={{ gridArea: "profileRelationsArea" }}>
-          <ProfileRelationsBoxWrapper>
-            <h2 className='smallTitle'>
-              Comunidades ({comunidades.length})
-            </h2>
-            <ul>
-              {
-                comunidades.map(comunidade => (
-                  <li key={comunidade.tittle}>
-                    <a href={'/users/' + comunidade.tittle} >
-                      <img src={comunidade.image} />
-                      <span>{comunidade.tittle}</span>
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
 
-          </ProfileRelationsBoxWrapper>
+          <ProfileRelationsBox title={'Seguidores'} lista={seguidores} />
+          <ProfileRelationsBox title={'Comunidades'} lista={comunidades} />
+
           <ProfileRelationsBoxWrapper>
             <h2 className='smallTitle'>
               Pessoas da Comunidade ({pessoasFavoritas.length})
@@ -130,9 +149,6 @@ export default function Home() {
                 ))
               }
             </ul>
-          </ProfileRelationsBoxWrapper>
-          <ProfileRelationsBoxWrapper style={{ gridArea: "profileRelationsArea" }}>
-            Comunidades
           </ProfileRelationsBoxWrapper>
         </div>
       </MainGrid>
