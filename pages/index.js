@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import nookies from 'nookies'
+import jwt from 'jsonwebtoken'
 import Box from '../src/components/Box';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 import MainGrid from '../src/components/MainGrid';
@@ -12,14 +14,14 @@ function ProfileSidebar(props) {
 
   return (
     <Box as="aside" style={{ gridArea: "profileArea" }}>
-      <img src={"https://github.com/" + props.gitUser + ".png"} alt="avatar" style={{ borderRadius: '8px' }} />
+      <img src={"https://github.com/" + props.githubUser + ".png"} alt="avatar" style={{ borderRadius: '8px' }} />
       <hr />
       <a
         className='boxLink'
-        href={"https://github.com/" + props.gitUser}
+        href={"https://github.com/" + props.githubUser}
         target='_blank'
       >
-        @{props.gitUser}
+        @{props.githubUser}
       </a>
       <hr />
       <AlurakutProfileSidebarMenuDefault />
@@ -36,10 +38,10 @@ function ProfileRelationsBox({ title, lista }) {
       <ul>
         {
           lista.map(item => (
-            <li key={item.title}>
-              <a href={'/users/' + item.title} >
-                <img src={item.image} />
-                <span>{item.title}</span>
+            <li key={item.id}>
+              <a href={item.html_url} >
+                <img src={item.avatar_url} />
+                <span>{item.login}</span>
               </a>
             </li>
           ))
@@ -49,9 +51,9 @@ function ProfileRelationsBox({ title, lista }) {
   )
 }
 
-export default function Home() {
+export default function Home(props) {
 
-  const gitUser = "AntonioLuisP"
+  const githubUser = props.githubUser
 
   const [comunidades, setComunidades] = React.useState([])
   const [seguidores, setSeguidores] = React.useState([])
@@ -66,10 +68,13 @@ export default function Home() {
   ]
 
   useEffect(() => {
-    fetch('https://api.github.com/users/AntonioLuisP/followers')
+    fetch('https://api.github.com/users/' + githubUser + '/followers')
       .then(response => response.json())
       .then(response => {
-        setSeguidores(response)
+        console.log(response)
+        if (response.message !== 'Not Found') {
+          setSeguidores(response)
+        }
       })
       .catch(error => console.log(error))
 
@@ -106,7 +111,7 @@ export default function Home() {
     const comunidade = {
       title: dadosForm.get('title'),
       imageUrl: dadosForm.get('imageUrl'),
-      creatorSlug: gitUser
+      creatorSlug: githubUser
     }
 
     fetch('/api/comunidades', {
@@ -126,10 +131,10 @@ export default function Home() {
 
   return (
     <>
-      <AlurakutMenu githubUser={gitUser} />
+      <AlurakutMenu githubUser={githubUser} />
       <MainGrid>
         <div className='profileArea' style={{ gridArea: "profileArea" }}>
-          <ProfileSidebar gitUser={gitUser} />
+          <ProfileSidebar githubUser={githubUser} />
         </div>
         <div className='welcomeArea' style={{ gridArea: "welcomeArea" }}>
           <Box style={{ gridArea: "welcomeArea" }}>
@@ -208,4 +213,26 @@ export default function Home() {
       </MainGrid>
     </>
   )
+}
+
+
+export async function getServerSideProps(context) {
+  const token = nookies.get(context).USER_TOKEN
+  const decodedToken = jwt.decode(token)
+  const githubUser = decodedToken?.githubUser;
+
+  if (!githubUser) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
+
+  return {
+    props: {
+      githubUser: githubUser
+    }
+  }
 }
