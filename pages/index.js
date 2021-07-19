@@ -71,7 +71,6 @@ export default function Home(props) {
     fetch('https://api.github.com/users/' + githubUser + '/followers')
       .then(response => response.json())
       .then(response => {
-        console.log(response)
         if (response.message !== 'Not Found') {
           setSeguidores(response)
         }
